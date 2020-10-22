@@ -14,12 +14,19 @@ instance_id = 0
 class GhinjaDockWidget(QWidget, DockContextHandler):
 	def __init__(self, parent, name, data):
 		# Read the configuration
-		with open(os.path.dirname(os.path.realpath(__file__)) + "/metadata.json",'r') as meta_file:
-			self.metadata = json.load(meta_file)
-		if not os.path.exists(self.metadata["ghidra_install_path"]):
-			self.metadata["ghidra_install_path"] = get_open_filename_input("Provide Path to Ghidra \"analyzeHeadless(.bat)\" file (Usually: <GHIDRA_INSTALL>/support/analyzeHeadless)").decode("utf-8")
-			with open(os.path.dirname(os.path.realpath(__file__)) + "/metadata.json",'w') as meta_file:
-				json.dump(self.metadata,meta_file)
+		# TODO handle cancel
+		settings = Settings()
+		settings.register_group("ghinja", "Ghinja")
+		settings.register_setting("ghinja.ghidra_install_path", """
+				{
+					"title" : "Ghidra Installation Path",
+					"type" : "string",
+					"default" : "",
+					"description" : "Path to analyzeHeadless file in Ghidra installation dir."
+				}
+				""")
+		if not os.path.exists(settings.get_string("ghinja.ghidra_install_path")):
+			settings.set_string("ghinja.ghidra_install_path",get_open_filename_input("Provide Path to Ghidra \"analyzeHeadless(.bat)\" file (Usually: <GHIDRA_INSTALL>/support/analyzeHeadless)").decode("utf-8"))
 		global instance_id
 		self.decomp = None
 		self.decomp_results = None
@@ -61,7 +68,8 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 				file_content = binary.read()
 				md5.update(file_content)
 			# Create relevant_folder
-			current_path = Path(Path.home() / f".ghinja_projects/{str(Path(view_frame.actionContext().binaryView.file.original_filename).name) + '_' + md5.hexdigest()}")
+			current_path = Path(Path(user_plugin_path()) / ".." / f"ghinja_projects/{str(Path(view_frame.actionContext().binaryView.file.original_filename).name) + '_' + md5.hexdigest()}")
+			#current_path = Path(Path.home() / f".ghinja_projects/{str(Path(view_frame.actionContext().binaryView.file.original_filename).name) + '_' + md5.hexdigest()}")
 			self.decompile_result_path = Path(current_path / "decompiled.c")
 
 			self.decomp = Decompiler(view_frame.actionContext().binaryView.file.original_filename)
