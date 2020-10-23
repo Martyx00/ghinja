@@ -5,8 +5,9 @@ from PySide2.QtGui import QSyntaxHighlighter, QTextCharFormat, QFont, QColor
 
 class Highlighter(QSyntaxHighlighter):
     def highlightBlock(self, text):
+        # TODO highlighter should give params different color?
         # Highlight keywords
-        keywords = ["\\blonglong\\b","\\bushort\\b","\\bFILE\\b","\\bulong\\b","\\bbyte\\b","\\bfalse\\b","\\btrue\\b","\\buint\\b","\\bsize_t\\b","\\bundefined\\d*\\b","\\bchar\\b", "\\bclass\\b", "\\bconst\\b", "\\bdouble\\b", "\\benum\\b", "\\bexplicit\\b","\\bfriend\\b", "\\binline\\b", "\\bint\\b","\\blong\\b", "\\bnamespace\\b", "\\boperator\\b","\\bprivate\\b", "\\bprotected\\b", "\\bpublic\\b","\\bshort\\b", "\\bsignals\\b", "\\bsigned\\b","\\bslots\\b", "\\bstatic\\b", "\\bstruct\\b","\\btemplate\\b", "\\btypedef\\b", "\\btypename\\b","\\bunion\\b", "\\bunsigned\\b", "\\bvirtual\\b","\\bvoid\\b", "\\bvolatile\\b", "\\bbool\\b"]
+        keywords = ["\\bcode\\b","\\bLPSTR\\b","\\bSIZE_T\\b","\\bLPVOID\\b","\\bDWORD\\b","\\bclock_t\\b","\\bthis\\b","\\bUINT\\b","\\bHANDLE\\b","\\blonglong\\b","\\bushort\\b","\\bFILE\\b","\\bulong\\b","\\bbyte\\b","\\bfalse\\b","\\btrue\\b","\\buint\\b","\\bsize_t\\b","\\bundefined\\d*\\b","\\bchar\\b", "\\bclass\\b", "\\bconst\\b", "\\bdouble\\b", "\\benum\\b", "\\bexplicit\\b","\\bfriend\\b", "\\binline\\b", "\\bint\\b","\\blong\\b", "\\bnamespace\\b", "\\boperator\\b","\\bprivate\\b", "\\bprotected\\b", "\\bpublic\\b","\\bshort\\b", "\\bsignals\\b", "\\bsigned\\b","\\bslots\\b", "\\bstatic\\b", "\\bstruct\\b","\\btemplate\\b", "\\btypedef\\b", "\\btypename\\b","\\bunion\\b", "\\bunsigned\\b", "\\bvirtual\\b","\\bvoid\\b", "\\bvolatile\\b", "\\bbool\\b"]
         keyword_format = QTextCharFormat()
         keyword_format.setForeground(QColor.fromRgb(62,156,202))
         for keyword in keywords:
@@ -46,3 +47,11 @@ class Highlighter(QSyntaxHighlighter):
         hex_const = "0x[0-9a-f]+\\b"
         for match in re.finditer(hex_const, text):
             self.setFormat(match.start(), match.end() - match.start(), num_const_format)
+        # Highlight data
+        data_format = QTextCharFormat()
+        data_format.setForeground(QColor.fromRgb(142,230,237))
+        num_consts = "\\b_?DAT_[0-9a-zA-Z]+\\b"
+        for match in re.finditer(num_consts, text):
+            self.setFormat(match.start(), match.end() - match.start(), data_format)
+
+        

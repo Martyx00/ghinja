@@ -25,30 +25,52 @@ import ghidra.app.script.GatherParamPanel;
 import ghidra.app.script.GhidraScript;
 import ghidra.app.util.Option;
 import ghidra.app.util.exporter.CppExporter;
+import ghidra.program.model.address.AddressSet;
+import ghidra.program.model.address.Address;
 
-public class Decompile extends GhidraScript implements Ingredient {
+import ghidra.app.decompiler.ClangLine;
+import ghidra.app.decompiler.DecompInterface;
+import ghidra.app.decompiler.DecompileResults;
+import ghidra.app.decompiler.DecompiledFunction;
+import ghidra.app.decompiler.PrettyPrinter;
+import ghidra.app.util.headless.HeadlessScript;
+import ghidra.program.model.address.Address;
+import ghidra.program.model.listing.Function;
+import ghidra.program.model.listing.FunctionIterator;
+import ghidra.program.model.listing.Listing;
+import java.util.ArrayList;
+import java.io.FileWriter;
+
+public class Decompile extends HeadlessScript {
 
 	@Override
 	public void run() throws Exception {
-		IngredientDescription[] ingredients = getIngredientDescriptions();
-		for (IngredientDescription ingredient : ingredients) {
-			state.addParameter(ingredient.getID(), ingredient.getLabel(), ingredient.getType(),
-				ingredient.getDefaultValue());
+	  	
+		setHeadlessContinuationOption(HeadlessContinuationOption.ABORT);
+		DecompInterface decompiler = new DecompInterface();
+		
+		Listing listing = currentProgram.getListing();
+		FunctionIterator iter = listing.getFunctions(true);
+		Function function = iter.next();
+		decompiler.openProgram(function.getProgram());
+		while (iter.hasNext() && !monitor.isCancelled()) {
+			if (function.isExternal()) {
+				function = iter.next();
+				continue;
+			}
+			Address entryPoint = function.getEntryPoint();
+			if (entryPoint != null) {
+				FileWriter myWriter = new FileWriter("PLACEHOLDER_OUTPUT"+String.valueOf(entryPoint.getOffset()));
+				
+				DecompileResults decompilerResult = decompiler.decompileFunction(function, 5, null);
+				DecompiledFunction decompiledFunction = decompilerResult.getDecompiledFunction();
+				myWriter.write(decompiledFunction.getC());
+				myWriter.close();
+			}
+			function = iter.next();
 		}
-		File outputFile = new File("PLACEHOLDER_OUTPUT");
-		CppExporter cppExporter = new CppExporter();
-		List<Option> options = new ArrayList<Option>();
-		options.add(new Option(CppExporter.CREATE_HEADER_FILE, new Boolean(false)));
-		cppExporter.setOptions(options);
-		cppExporter.setExporterServiceProvider(state.getTool());
-		cppExporter.export(outputFile, currentProgram, null, monitor);
+		
 	}
-
-	@Override
-	public IngredientDescription[] getIngredientDescriptions() {
-		IngredientDescription[] retVal = new IngredientDescription[] {
-			new IngredientDescription("COutputFile", "Output C File", GatherParamPanel.FILE, "") };
-		return retVal;
-	}
-
 }
+
+

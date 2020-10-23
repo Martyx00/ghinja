@@ -17,12 +17,12 @@ class Decompiler(BackgroundTaskThread):
             md5.update(file_content)
         # Create relevant_folder
         self.current_path = Path(Path(user_plugin_path()) / ".." / f"ghinja_projects/{str(Path(file_name).name) + '_' + md5.hexdigest()}")
-        #self.current_path = Path(Path.home() / f".ghinja_projects/{str(Path(file_name).name) + '_' + md5.hexdigest()}")
-        self.decompile_result_path = Path(self.current_path / "decompiled.c")
-        self.current_path.mkdir(parents=True, exist_ok=True)
+        self.decompile_result_path = Path(self.current_path / "decomp_")
+        
 
     def run(self):
-        if not os.path.exists(str(self.decompile_result_path)):
+        if not os.path.exists(str(self.current_path)):
+            self.current_path.mkdir(parents=True, exist_ok=True)
             with open(os.path.dirname(os.path.realpath(__file__)) + "/Decompile_TEMPLATE.java",'r') as decomp_file:
                 data = decomp_file.read()
                 with open(os.path.dirname(os.path.realpath(__file__)) + "/Decompile.java",'w') as tmp_decomp_file:

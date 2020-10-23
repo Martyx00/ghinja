@@ -70,7 +70,7 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 			# Create relevant_folder
 			current_path = Path(Path(user_plugin_path()) / ".." / f"ghinja_projects/{str(Path(view_frame.actionContext().binaryView.file.original_filename).name) + '_' + md5.hexdigest()}")
 			#current_path = Path(Path.home() / f".ghinja_projects/{str(Path(view_frame.actionContext().binaryView.file.original_filename).name) + '_' + md5.hexdigest()}")
-			self.decompile_result_path = Path(current_path / "decompiled.c")
+			self.decompile_result_path = Path(current_path / "decomp_")
 
 			self.decomp = Decompiler(view_frame.actionContext().binaryView.file.original_filename)
 			self.decomp.start()
@@ -89,42 +89,11 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 			current_function = self.current_view.get_functions_containing(offset)[0]
 		except:
 			return "DECOMPILER OUTPUT FOR THIS FUNCTION WAS NOT FOUND"
-		function_name = current_function.name
-		function_anon_name = f'FUN_{current_function.start:08x}'
-		# TODO figure out better way in distinguisihin between these
-		if function_name == "main" or function_name == "_main" or function_name == "start" or function_name == "_start":
-			function_name = "entry"
-
-		function_name += "("
-		output = False
-		open_found = False
-		stack = []
-		if os.path.exists(str(self.decompile_result_path)):
-			with open(str(self.decompile_result_path)) as search:
-				for line in search:
-					l = line.rstrip()
-					if l:
-						if output:
-							for i, c in enumerate(line):
-								if c == "{":
-									open_found = True
-									stack.append(i)
-								elif c == "}":
-									stack.pop()
-							if len(stack) == 0 and open_found:
-								function_output += line
-								break
-							else:
-								function_output += line
-						elif (function_name in line or function_anon_name in line) and not ";" in line:
-							function_output = ""
-							output = True
-							if function_name == "entry(":
-								function_output += line.replace("entry",current_function.name)
-							elif function_anon_name in line:
-								function_output += line.replace(function_anon_name,current_function.name)
-							else:
-								function_output += line
+		if os.path.exists(str(self.decompile_result_path) + str(current_function.start)):
+			with open(str(self.decompile_result_path) + str(current_function.start)) as function_file:
+				function_output = function_file.read()
+			# Replace function name
+			function_output = re.sub("\\b\\w*\\(", current_function.name + "(", function_output, 1)
 			# Rename functions
 			for callee in current_function.callees:
 				look_for = f'FUN_{callee.start:08x}'
@@ -134,6 +103,7 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 				if local.storage < 0:
 					look_for = f"local_{hex(local.storage)[3:]}"
 				function_output = re.sub(look_for,local.name,function_output)
+			# TODO rename params
 		return function_output
 		
 
