@@ -102,7 +102,7 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 			for local in current_function.stack_layout:
 				if local.storage < 0:
 					look_for = f"local_{hex(local.storage)[3:]}"
-				function_output = re.sub(look_for,local.name,function_output)
+					function_output = re.sub(look_for,local.name,function_output)
 			# TODO rename params
 		return function_output
 		

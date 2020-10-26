@@ -18,21 +18,16 @@
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-
 import ghidra.app.plugin.core.script.Ingredient;
 import ghidra.app.plugin.core.script.IngredientDescription;
 import ghidra.app.script.GatherParamPanel;
 import ghidra.app.script.GhidraScript;
 import ghidra.app.util.Option;
-import ghidra.app.util.exporter.CppExporter;
 import ghidra.program.model.address.AddressSet;
 import ghidra.program.model.address.Address;
-
-import ghidra.app.decompiler.ClangLine;
 import ghidra.app.decompiler.DecompInterface;
 import ghidra.app.decompiler.DecompileResults;
 import ghidra.app.decompiler.DecompiledFunction;
-import ghidra.app.decompiler.PrettyPrinter;
 import ghidra.app.util.headless.HeadlessScript;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Function;
@@ -68,8 +63,7 @@ public class Decompile extends HeadlessScript {
 				myWriter.close();
 			}
 			function = iter.next();
-		}
-		
+		}	
 	}
 }
 
