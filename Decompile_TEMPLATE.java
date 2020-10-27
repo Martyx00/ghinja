@@ -55,10 +55,13 @@ public class Decompile extends HeadlessScript {
 			}
 			Address entryPoint = function.getEntryPoint();
 			if (entryPoint != null) {
-				FileWriter myWriter = new FileWriter("PLACEHOLDER_OUTPUT"+String.valueOf(entryPoint.getOffset()));
-				
 				DecompileResults decompilerResult = decompiler.decompileFunction(function, 5, null);
 				DecompiledFunction decompiledFunction = decompilerResult.getDecompiledFunction();
+				if (decompiledFunction == null) {
+					function = iter.next();
+					continue;
+				}
+				FileWriter myWriter = new FileWriter("PLACEHOLDER_OUTPUT"+String.valueOf(entryPoint.getOffset()));
 				myWriter.write(decompiledFunction.getC());
 				myWriter.close();
 			}
