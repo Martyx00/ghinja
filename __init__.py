@@ -10,6 +10,7 @@ import os
 import hashlib
 from pathlib import Path
 import shutil
+# TODO some files have functions on different offset in binja and ghidra? Weird but solve
 
 instance_id = 0
 class GhinjaDockWidget(QWidget, DockContextHandler):

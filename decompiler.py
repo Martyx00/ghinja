@@ -22,13 +22,10 @@ class Decompiler(BackgroundTaskThread):
         
 
     def run(self):
-        log_info("RUNNING")
         with open(os.path.dirname(os.path.realpath(__file__)) + "/Decompile_TEMPLATE.java",'r') as decomp_file:
-            log_info("REWROTE JAVA TEMPLATE")
             data = decomp_file.read()
             with open(os.path.dirname(os.path.realpath(__file__)) + "/Decompile.java",'w') as tmp_decomp_file:
                 tmp_decomp_file.write(data.replace("PLACEHOLDER_OUTPUT",str(self.decompile_result_path).replace("\\","\\\\")))
-        log_info(f"{Settings().get_string('ghinja.ghidra_install_path')} \"{str(self.current_path)}\" \"{self.file_name}\" -import \"{self.file_path}\" -postscript \"{os.path.dirname(os.path.realpath(__file__)) + '/Decompile.java'}\"")
         os.system(f"{Settings().get_string('ghinja.ghidra_install_path')} \"{str(self.current_path)}\" \"{self.file_name}\" -import \"{self.file_path}\" -postscript \"{os.path.dirname(os.path.realpath(__file__)) + '/Decompile.java'}\"")
         os.remove(os.path.dirname(os.path.realpath(__file__)) + "/Decompile.java")
 
