@@ -9,6 +9,7 @@ import json
 import os
 import hashlib
 from pathlib import Path
+import shutil
 
 instance_id = 0
 class GhinjaDockWidget(QWidget, DockContextHandler):
@@ -64,16 +65,35 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 		else:
 			self.current_view = view_frame.actionContext().binaryView
 			md5 = hashlib.md5()
-			with open(view_frame.actionContext().binaryView.file.original_filename,'rb') as binary:
-				file_content = binary.read()
-				md5.update(file_content)
+			try:
+				with open(view_frame.actionContext().binaryView.file.original_filename,'rb') as binary:
+					file_content = binary.read()
+					md5.update(file_content)
+					current_path = Path(Path(user_plugin_path()) / ".." / f"ghinja_projects/{str(Path(view_frame.actionContext().binaryView.file.original_filename).name) + '_' + md5.hexdigest()}")
+				filename = view_frame.actionContext().binaryView.file.original_filename
+				current_path.mkdir(parents=True, exist_ok=True)
+			except:
+				# File does not exist
+				tmp_path = Path(user_plugin_path()) / ".." / f"ghinja_projects/{str(Path(view_frame.actionContext().binaryView.file.original_filename).name)}"
+				self.current_view.save(str(tmp_path))
+				while not os.path.exists(str(tmp_path)):
+					pass
+				with open(str(tmp_path),'rb') as binary:
+					file_content = binary.read()
+					md5.update(file_content)
+				current_path = Path(Path(user_plugin_path()) / ".." / f"ghinja_projects/{str(Path(view_frame.actionContext().binaryView.file.original_filename).name) + '_' + md5.hexdigest()}")
+				current_path.mkdir(parents=True, exist_ok=True)
+				shutil.move(tmp_path, current_path / tmp_path.name)
+				filename = str(current_path / tmp_path.name)
 			# Create relevant_folder
-			current_path = Path(Path(user_plugin_path()) / ".." / f"ghinja_projects/{str(Path(view_frame.actionContext().binaryView.file.original_filename).name) + '_' + md5.hexdigest()}")
 			#current_path = Path(Path.home() / f".ghinja_projects/{str(Path(view_frame.actionContext().binaryView.file.original_filename).name) + '_' + md5.hexdigest()}")
 			self.decompile_result_path = Path(current_path / "decomp_")
-
-			self.decomp = Decompiler(view_frame.actionContext().binaryView.file.original_filename)
-			self.decomp.start()
+			if not os.path.exists(filename + ".rep"):
+				self.decomp = Decompiler(filename,current_path)
+				self.decomp.start()
+			else:
+				self.decomp = Decompiler(filename,current_path)
+				self.decomp.finished = True
 
 
 	def contextMenuEvent(self, event):
