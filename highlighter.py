@@ -26,11 +26,14 @@ class Highlighter(QSyntaxHighlighter):
         function_pattern = "\\b\\w+(?=\\()"
         for match in re.finditer(function_pattern, text):
             self.setFormat(match.start(), match.end() - match.start(), function_format)
-        # Highlight comment
+        # Highlight comments
         comment_format = QTextCharFormat()
         comment_format.setForeground(QColor.fromRgb(82,153,85))
         comment_pattern = "\/\/.*$"
         for match in re.finditer(comment_pattern, text):
+            self.setFormat(match.start(), match.end() - match.start(), comment_format)
+        multi_comment_pattern = "(?s)\\/\\*.*?\\*\\/"
+        for match in re.finditer(multi_comment_pattern, text):
             self.setFormat(match.start(), match.end() - match.start(), comment_format)
         # Highlight string constants
         const_format = QTextCharFormat()
