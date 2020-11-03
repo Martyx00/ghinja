@@ -10,6 +10,7 @@ import os
 import hashlib
 from pathlib import Path
 import shutil
+import re
 # TODO some files have functions on different offset in binja and ghidra? Weird but solve
 
 instance_id = 0
@@ -110,7 +111,9 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 			current_function = self.current_view.get_functions_containing(offset)[0]
 		except:
 			return "DECOMPILER OUTPUT FOR THIS FUNCTION WAS NOT FOUND"
-		if os.path.exists(str(self.decompile_result_path) + str(current_function.start)):
+		# Get different offset functions os.listdir()
+
+		if os.path.exists(str(self.decompile_result_path) + str(current_function.start)) or os.path.exists(str(self.decompile_result_path) + str(current_function.start)):
 			with open(str(self.decompile_result_path) + str(current_function.start)) as function_file:
 				function_output = function_file.read()
 			# Replace function name
@@ -132,6 +135,6 @@ def addStaticDockWidget():
 	dock_handler = DockHandler.getActiveDockHandler()
 	parent = dock_handler.parent()
 	dock_widget = GhinjaDockWidget.create_widget("Ghinja Decompiler", parent)
-	dock_handler.addDockWidget(dock_widget, Qt.TopDockWidgetArea, Qt.Horizontal, True, False)
+	dock_handler.addDockWidget(dock_widget, Qt.TopDockWidgetArea, Qt.Vertical, True, False)
 
 addStaticDockWidget()
