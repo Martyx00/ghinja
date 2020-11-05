@@ -43,7 +43,7 @@ public class Decompile extends HeadlessScript {
 	  	
 		setHeadlessContinuationOption(HeadlessContinuationOption.ABORT);
 		DecompInterface decompiler = new DecompInterface();
-		
+		boolean first = true;
 		Listing listing = currentProgram.getListing();
 		FunctionIterator iter = listing.getFunctions(true);
 		Function function = iter.next();
@@ -54,7 +54,14 @@ public class Decompile extends HeadlessScript {
 				continue;
 			}
 			Address entryPoint = function.getEntryPoint();
+			
 			if (entryPoint != null) {
+				if (first) {
+					FileWriter myWriter = new FileWriter("PLACEHOLDER_OUTPUT"+"offset");
+					myWriter.write(String.valueOf(entryPoint.getOffset()));
+					myWriter.close();
+					first = false;
+				}
 				DecompileResults decompilerResult = decompiler.decompileFunction(function, 5, null);
 				DecompiledFunction decompiledFunction = decompilerResult.getDecompiledFunction();
 				if (decompiledFunction == null) {

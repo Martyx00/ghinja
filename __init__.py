@@ -4,6 +4,7 @@ from PySide2 import QtCore
 from .highlighter import Highlighter
 from .decompiler import Decompiler
 from PySide2.QtCore import Qt
+from PySide2.QtGui import QTextCursor
 from PySide2.QtWidgets import QApplication, QHBoxLayout, QVBoxLayout, QLabel, QWidget, QTextEdit
 import json
 import os
@@ -11,7 +12,6 @@ import hashlib
 from pathlib import Path
 import shutil
 import re
-# TODO some files have functions on different offset in binja and ghidra? Weird but solve
 
 instance_id = 0
 class GhinjaDockWidget(QWidget, DockContextHandler):
@@ -35,6 +35,7 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 		self.decomp_results = None
 		self.current_view = None
 		self.decompile_result_path = None
+		self.decompile_offset_path = None
 		QWidget.__init__(self, parent)
 		DockContextHandler.__init__(self, self, name)
 		self.actionHandler = UIActionHandler()
@@ -44,12 +45,18 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 		self.editor.setReadOnly(True)
 		self.editor.setStyleSheet("QTextEdit { background-color: #2a2a2a; font-family: Consolas }")
 		self.editor.setPlainText("N/A")
+		self.editor.selectionChanged.connect(self.onSelect)
+		self.cursor = QTextCursor(self.editor.document())
 		highlighter = Highlighter(self.editor.document())
 		layout.addWidget(self.editor)
 		layout.setAlignment(QtCore.Qt.AlignLeft)
 		self.setLayout(layout)
 		instance_id += 1
 		self.data = data
+
+	def onSelect(self):
+		pass
+		#log_info("selected: " + str(self.editor.selection()))
 
 	def notifyOffsetChanged(self, offset):
 		if self.decomp.finished:
@@ -60,6 +67,7 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 			return False
 		else:
 			return True
+	
 
 	def notifyViewChanged(self, view_frame):
 		if view_frame is None:
@@ -90,6 +98,7 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 			# Create relevant_folder
 			#current_path = Path(Path.home() / f".ghinja_projects/{str(Path(view_frame.actionContext().binaryView.file.original_filename).name) + '_' + md5.hexdigest()}")
 			self.decompile_result_path = Path(current_path / "decomp_")
+			self.decompile_offset_path = Path(current_path / "decomp_offset")
 			if not os.path.exists(filename + ".rep"):
 				self.decomp = Decompiler(filename,current_path)
 				self.decomp.start()
@@ -112,9 +121,17 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 		except:
 			return "DECOMPILER OUTPUT FOR THIS FUNCTION WAS NOT FOUND"
 		# Get different offset functions os.listdir()
+		offset = 0
+		with open(str(self.decompile_offset_path),"r") as offset_file:
+			ghidra_offset = int(offset_file.read())
+			offset_diff = ghidra_offset - self.current_view.functions[0].start
+			if offset_diff == 0:
+				offset = current_function.start
+			else:
+				offset = current_function.start + offset_diff
 
-		if os.path.exists(str(self.decompile_result_path) + str(current_function.start)) or os.path.exists(str(self.decompile_result_path) + str(current_function.start)):
-			with open(str(self.decompile_result_path) + str(current_function.start)) as function_file:
+		if os.path.exists(str(self.decompile_result_path) + str(offset)):
+			with open(str(self.decompile_result_path) + str(offset),"r") as function_file:
 				function_output = function_file.read()
 			# Replace function name
 			function_output = re.sub("\\b\\w*\\(", current_function.name + "(", function_output, 1)
