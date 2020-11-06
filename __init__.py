@@ -46,8 +46,7 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 		self.editor.setStyleSheet("QTextEdit { background-color: #2a2a2a; font-family: Consolas }")
 		self.editor.setPlainText("N/A")
 		self.editor.selectionChanged.connect(self.onSelect)
-		self.cursor = QTextCursor(self.editor.document())
-		highlighter = Highlighter(self.editor.document())
+		highlighter = Highlighter(self.editor.document(),"")
 		layout.addWidget(self.editor)
 		layout.setAlignment(QtCore.Qt.AlignLeft)
 		self.setLayout(layout)
@@ -55,8 +54,9 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 		self.data = data
 
 	def onSelect(self):
-		pass
-		#log_info("selected: " + str(self.editor.selection()))
+		cursor = self.editor.textCursor()
+		ch = Highlighter(self.editor.document(),cursor.selectedText())
+		#log_info("selected: " + str(cursor.selectedText()))
 
 	def notifyOffsetChanged(self, offset):
 		if self.decomp.finished:
@@ -144,7 +144,6 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 				if local.storage < 0:
 					look_for = f"local_{hex(local.storage)[3:]}"
 					function_output = re.sub(look_for,local.name,function_output)
-			# TODO rename params
 		return function_output
 		
 
