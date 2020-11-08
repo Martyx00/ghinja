@@ -31,6 +31,9 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 		if not os.path.exists(settings.get_string("ghinja.ghidra_install_path")):
 			settings.set_string("ghinja.ghidra_install_path",get_open_filename_input("Provide Path to Ghidra \"analyzeHeadless(.bat)\" file (Usually: <GHIDRA_INSTALL>/support/analyzeHeadless)").decode("utf-8"))
 		global instance_id
+		self.binja_renames = {} # {"function_name":[{"original":"new"})]}
+		self.current_function = None
+		self.current_offset = None
 		self.decomp = None
 		self.decomp_results = None
 		self.current_view = None
@@ -43,6 +46,7 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 		layout = QVBoxLayout()
 		self.editor = QTextEdit(self)
 		self.editor.setReadOnly(True)
+		self.editor.installEventFilter(self)
 		self.editor.setStyleSheet("QTextEdit { background-color: #2a2a2a; font-family: Consolas }")
 		self.editor.setPlainText("N/A")
 		self.editor.selectionChanged.connect(self.onSelect)
@@ -60,6 +64,7 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 
 	def notifyOffsetChanged(self, offset):
 		if self.decomp.finished:
+			self.current_offset = offset
 			self.editor.setPlainText(self.find_function(offset))
 
 	def shouldBeVisible(self, view_frame):
@@ -67,6 +72,36 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 			return False
 		else:
 			return True
+
+	def eventFilter(self, obj, event):
+		if event.type() == QtCore.QEvent.KeyPress and obj is self.editor:
+			cursor = self.editor.textCursor()
+			if event.key() == QtCore.Qt.Key_N and self.editor.hasFocus():
+				if self.current_view.file.has_database == False:
+					show_message_box("Project not saved", "To enable renaming, make sure that the current project is saved to a BNDB file.", buttons=0, icon=2)
+					return False
+				# Handle rename action
+				selected = cursor.selectedText()
+				if selected != "":
+					# Get selected text
+					new_name = get_text_line_input(f"Rename {selected}: ","Rename")
+					if not re.match(b"^\\w+$", new_name):
+						show_message_box("Name not valid", "Please use only 'word' characters (A-Z, a-z, 0-9 and _)", buttons=0, icon=2)
+						return False
+					found = False
+					for key in self.binja_renames[hex(self.current_function.start)]:
+						if key["original"] == selected:
+							# Was already renamed so just reassign to avoid accumulating tosn of data
+							key["new"] = new_name.decode("UTF-8")
+							found = True
+					if not found:
+						self.binja_renames[hex(self.current_function.start)].append({"original":selected,"new":new_name.decode("UTF-8")})
+					self.notifyOffsetChanged(self.current_offset)
+			if event.key() == QtCore.Qt.Key_G:
+				# TODO check if highlighted thing is a function
+				# current_view.offset = 4206085
+				show_message_box("GOTO", "Hello", buttons=0, icon=2)
+		return False
 	
 
 	def notifyViewChanged(self, view_frame):
@@ -117,7 +152,11 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 	def find_function(self, offset):
 		function_output = "DECOMPILER OUTPUT FOR THIS FUNCTION WAS NOT FOUND"
 		try:
-			current_function = self.current_view.get_functions_containing(offset)[0]
+			self.current_function = self.current_view.get_functions_containing(offset)[0]
+			try:
+				self.binja_renames[hex(self.current_function.start)]
+			except:
+				self.binja_renames[hex(self.current_function.start)] = []
 		except:
 			return "DECOMPILER OUTPUT FOR THIS FUNCTION WAS NOT FOUND"
 		# Get different offset functions os.listdir()
@@ -126,21 +165,24 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 			ghidra_offset = int(offset_file.read())
 			offset_diff = ghidra_offset - self.current_view.functions[0].start
 			if offset_diff == 0:
-				offset = current_function.start
+				offset = self.current_function.start
 			else:
-				offset = current_function.start + offset_diff
+				offset = self.current_function.start + offset_diff
 
 		if os.path.exists(str(self.decompile_result_path) + str(offset)):
 			with open(str(self.decompile_result_path) + str(offset),"r") as function_file:
 				function_output = function_file.read()
 			# Replace function name
-			function_output = re.sub("\\b\\w*\\(", current_function.name + "(", function_output, 1)
+			function_output = re.sub("\\b\\w*\\(", self.current_function.name + "(", function_output, 1)
 			# Rename functions
-			for callee in current_function.callees:
+			for callee in self.current_function.callees:
 				look_for = f'FUN_{callee.start:08x}'
 				function_output = function_output.replace(look_for,callee.name)
+			for ghinja_rename in self.binja_renames[hex(self.current_function.start)]:
+				function_output = re.sub(ghinja_rename["original"],ghinja_rename["new"],function_output)
+			
 			# Rename locals
-			for local in current_function.stack_layout:
+			for local in self.current_function.stack_layout:
 				if local.storage < 0:
 					look_for = f"local_{hex(local.storage)[3:]}"
 					function_output = re.sub(look_for,local.name,function_output)
