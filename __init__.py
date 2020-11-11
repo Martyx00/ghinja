@@ -30,11 +30,24 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 				""")
 		if not os.path.exists(settings.get_string("ghinja.ghidra_install_path")):
 			settings.set_string("ghinja.ghidra_install_path",get_open_filename_input("Provide Path to Ghidra \"analyzeHeadless(.bat)\" file (Usually: <GHIDRA_INSTALL>/support/analyzeHeadless)").decode("utf-8"))
+		
+		self.rename_settings = Settings()
+		self.rename_settings.register_group("ghinja_rename","Rename")
+		self.rename_settings.register_setting("ghinja_rename.ghinja_rename_struct", """
+				{
+					"title" : "Ghidra Rename Struct",
+					"type" : "string",
+					"default" : "{}",
+					"description" : "Settings to hold renames for variables."
+				}
+				""")
+
 		global instance_id
 		self.binja_renames = {} # {"function_name":[{"original":"new"})]}
 		self.current_function = None
 		self.current_offset = None
 		self.decomp = None
+		self.decomp_started = False
 		self.decomp_results = None
 		self.current_view = None
 		self.decompile_result_path = None
@@ -48,7 +61,7 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 		self.editor.setReadOnly(True)
 		self.editor.installEventFilter(self)
 		self.editor.setStyleSheet("QTextEdit { background-color: #2a2a2a; font-family: Consolas }")
-		self.editor.setPlainText("N/A")
+		self.editor.setPlainText(" Click anywhere in the dock to start decompiler")
 		self.editor.selectionChanged.connect(self.onSelect)
 		highlighter = Highlighter(self.editor.document(),"")
 		layout.addWidget(self.editor)
@@ -74,6 +87,10 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 			return True
 
 	def eventFilter(self, obj, event):
+		if event.type() == QtCore.QEvent.FocusIn and self.editor.hasFocus() and not self.decomp_started:
+			self.editor.setPlainText(" Decompiler running ... ")
+			self.decomp.start()
+			self.decomp_started = True
 		if event.type() == QtCore.QEvent.KeyPress and obj is self.editor:
 			cursor = self.editor.textCursor()
 			if event.key() == QtCore.Qt.Key_N and self.editor.hasFocus():
@@ -83,6 +100,8 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 				# Handle rename action
 				selected = cursor.selectedText()
 				if selected != "":
+					
+					log_info("RENAME: " + str(self.binja_renames))
 					# Get selected text
 					new_name = get_text_line_input(f"Rename {selected}: ","Rename")
 					if not re.match(b"^\\w+$", new_name):
@@ -94,13 +113,17 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 							# Was already renamed so just reassign to avoid accumulating tosn of data
 							key["new"] = new_name.decode("UTF-8")
 							found = True
+						if key["new"] == selected:
+							log_info("HIT")
+							key["new"] = new_name.decode("UTF-8")
+							found = True
 					if not found:
 						self.binja_renames[hex(self.current_function.start)].append({"original":selected,"new":new_name.decode("UTF-8")})
+					self.rename_settings.set_string("ghinja_rename.ghinja_rename_struct",json.dumps(self.binja_renames),self.current_view,SettingsScope.SettingsResourceScope)
+					log_info(str(self.binja_renames))
+					log_info(json.dumps(self.binja_renames))
+					log_info(str(self.rename_settings.get_string_with_scope("ghinja_rename.ghinja_rename_struct",self.current_view)))
 					self.notifyOffsetChanged(self.current_offset)
-			if event.key() == QtCore.Qt.Key_G:
-				# TODO check if highlighted thing is a function
-				# current_view.offset = 4206085
-				show_message_box("GOTO", "Hello", buttons=0, icon=2)
 		return False
 	
 
@@ -108,15 +131,16 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 		if view_frame is None:
 			pass
 		else:
+			self.binja_renames = json.loads(self.rename_settings.get_string("ghinja_rename.ghinja_rename_struct",self.current_view))
 			self.current_view = view_frame.actionContext().binaryView
 			md5 = hashlib.md5()
 			try:
 				with open(view_frame.actionContext().binaryView.file.original_filename,'rb') as binary:
 					file_content = binary.read()
 					md5.update(file_content)
-					current_path = Path(Path(user_plugin_path()) / ".." / f"ghinja_projects/{str(Path(view_frame.actionContext().binaryView.file.original_filename).name) + '_' + md5.hexdigest()}")
-				filename = view_frame.actionContext().binaryView.file.original_filename
-				current_path.mkdir(parents=True, exist_ok=True)
+					self.current_path = Path(Path(user_plugin_path()) / ".." / f"ghinja_projects/{str(Path(view_frame.actionContext().binaryView.file.original_filename).name) + '_' + md5.hexdigest()}")
+				self.filename = view_frame.actionContext().binaryView.file.original_filename
+				self.current_path.mkdir(parents=True, exist_ok=True)
 			except:
 				# File does not exist
 				tmp_path = Path(user_plugin_path()) / ".." / f"ghinja_projects/{str(Path(view_frame.actionContext().binaryView.file.original_filename).name)}"
@@ -126,20 +150,20 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 				with open(str(tmp_path),'rb') as binary:
 					file_content = binary.read()
 					md5.update(file_content)
-				current_path = Path(Path(user_plugin_path()) / ".." / f"ghinja_projects/{str(Path(view_frame.actionContext().binaryView.file.original_filename).name) + '_' + md5.hexdigest()}")
-				current_path.mkdir(parents=True, exist_ok=True)
-				shutil.move(tmp_path, current_path / tmp_path.name)
-				filename = str(current_path / tmp_path.name)
+				self.current_path = Path(Path(user_plugin_path()) / ".." / f"ghinja_projects/{str(Path(view_frame.actionContext().binaryView.file.original_filename).name) + '_' + md5.hexdigest()}")
+				self.current_path.mkdir(parents=True, exist_ok=True)
+				shutil.move(tmp_path, self.current_path / tmp_path.name)
+				self.filename = str(self.current_path / tmp_path.name)
 			# Create relevant_folder
 			#current_path = Path(Path.home() / f".ghinja_projects/{str(Path(view_frame.actionContext().binaryView.file.original_filename).name) + '_' + md5.hexdigest()}")
-			self.decompile_result_path = Path(current_path / "decomp_")
-			self.decompile_offset_path = Path(current_path / "decomp_offset")
-			if not os.path.exists(filename + ".rep"):
-				self.decomp = Decompiler(filename,current_path)
-				self.decomp.start()
-			else:
-				self.decomp = Decompiler(filename,current_path)
+			self.decompile_result_path = Path(self.current_path / "decomp_")
+			self.decompile_offset_path = Path(self.current_path / "decomp_offset")
+			self.decomp = Decompiler(self.filename,self.current_path)
+			if os.path.exists(str(self.decompile_offset_path)):
+				# Already decompiled we dont have to do anything
 				self.decomp.finished = True
+				self.decomp_started = True
+				
 
 
 	def contextMenuEvent(self, event):
@@ -154,8 +178,10 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 		try:
 			self.current_function = self.current_view.get_functions_containing(offset)[0]
 			try:
+				log_info("TRYING: " + str(self.binja_renames))
 				self.binja_renames[hex(self.current_function.start)]
 			except:
+				log_info("FAILING: " + str(self.binja_renames))
 				self.binja_renames[hex(self.current_function.start)] = []
 		except:
 			return "DECOMPILER OUTPUT FOR THIS FUNCTION WAS NOT FOUND"
@@ -178,10 +204,15 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 			for callee in self.current_function.callees:
 				look_for = f'FUN_{callee.start:08x}'
 				function_output = function_output.replace(look_for,callee.name)
-			for ghinja_rename in self.binja_renames[hex(self.current_function.start)]:
-				function_output = re.sub(ghinja_rename["original"],ghinja_rename["new"],function_output)
+
+			#for ghinja_rename in self.binja_renames[hex(self.current_function.start)]:
+			js = json.loads(self.rename_settings.get_string("ghinja_rename.ghinja_rename_struct",self.current_view))
+			if js:
+				log_info(str(js))
+				for ghinja_rename in js[hex(self.current_function.start)]:
+					function_output = re.sub(ghinja_rename["original"],ghinja_rename["new"],function_output)
 			
-			# Rename locals
+			# Rename locals - quite buggy actually
 			for local in self.current_function.stack_layout:
 				if local.storage < 0:
 					look_for = f"local_{hex(local.storage)[3:]}"

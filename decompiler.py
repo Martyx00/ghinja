@@ -6,8 +6,8 @@ import subprocess
 
 class Decompiler(BackgroundTaskThread):
     def __init__(self,file_name,current_path):
-        self.progress_banner = f"[Ghinja] Running the decompiler job ... Ghinja decompiler output not available until finished."
-        BackgroundTaskThread.__init__(self, self.progress_banner, True)
+        #self.progress_banner = f"[Ghinja] Running the decompiler job ... Ghinja decompiler output not available until finished."
+        BackgroundTaskThread.__init__(self, "", True)
         self.file_name = str(Path(file_name).name)
         self.file_path = file_name
         self.current_path = current_path
@@ -15,6 +15,7 @@ class Decompiler(BackgroundTaskThread):
         
 
     def run(self):
+        self.progress = f"[Ghinja] Running the decompiler job ... Ghinja decompiler output not available until finished."
         with open(os.path.dirname(os.path.realpath(__file__)) + "/Decompile_TEMPLATE.java",'r') as decomp_file:
             data = decomp_file.read()
             with open(os.path.dirname(os.path.realpath(__file__)) + "/Decompile.java",'w') as tmp_decomp_file:
