@@ -71,7 +71,10 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 
 	def onSelect(self):
 		cursor = self.editor.textCursor()
-		ch = Highlighter(self.editor.document(),cursor.selectedText())
+		if cursor.selectedText():
+			ch = Highlighter(self.editor.document(),"\\b" + cursor.selectedText() + "\\b")
+		else:
+			ch = Highlighter(self.editor.document(),"")
 		#log_info("selected: " + str(cursor.selectedText()))
 
 	def notifyOffsetChanged(self, offset):
@@ -92,6 +95,10 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 			self.decomp_started = True
 		if event.type() == QtCore.QEvent.KeyPress and obj is self.editor:
 			cursor = self.editor.textCursor()
+			if event.key() == QtCore.Qt.Key_F and self.editor.hasFocus():
+				# Find TODO
+				search_string = get_text_line_input("Find: ","Find")
+				ch = Highlighter(self.editor.document(),search_string.decode("UTF-8"))
 			if event.key() == QtCore.Qt.Key_N and self.editor.hasFocus():
 				if self.current_view.file.has_database == False:
 					show_message_box("Project not saved", "To enable renaming, make sure that the current project is saved to a BNDB file.", buttons=0, icon=2)

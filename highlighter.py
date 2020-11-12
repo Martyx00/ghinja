@@ -79,7 +79,7 @@ class Highlighter(QSyntaxHighlighter):
             selection_format.setBackground(QColor.fromRgb(121,195,231))
             selection_format.setForeground(QColor.fromRgb(42,42,42))
             try:
-                selection_pattern = "\\b" + self.selected + "\\b"
+                selection_pattern = self.selected
                 for match in re.finditer(selection_pattern, text):
                     self.setFormat(match.start(), match.end() - match.start(), selection_format)
             except:
