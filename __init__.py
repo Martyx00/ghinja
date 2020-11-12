@@ -50,6 +50,7 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 		self.decomp_started = False
 		self.decomp_results = None
 		self.current_view = None
+		self.function_output = None
 		self.decompile_result_path = None
 		self.decompile_offset_path = None
 		QWidget.__init__(self, parent)
@@ -100,29 +101,27 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 				# Handle rename action
 				selected = cursor.selectedText()
 				if selected != "":
-					
-					log_info("RENAME: " + str(self.binja_renames))
+					self.binja_renames = json.loads(self.rename_settings.get_string("ghinja_rename.ghinja_rename_struct",self.current_view))
 					# Get selected text
 					new_name = get_text_line_input(f"Rename {selected}: ","Rename")
 					if not re.match(b"^\\w+$", new_name):
 						show_message_box("Name not valid", "Please use only 'word' characters (A-Z, a-z, 0-9 and _)", buttons=0, icon=2)
 						return False
+					if re.search(f"\\b{new_name.decode('UTF-8')}\\b",self.function_output):
+						show_message_box("Name not unique", "Please use only unique name to avoid conflicts.", buttons=0, icon=2)
+						return False
 					found = False
 					for key in self.binja_renames[hex(self.current_function.start)]:
 						if key["original"] == selected:
-							# Was already renamed so just reassign to avoid accumulating tosn of data
+							# Was already renamed so just reassign to avoid accumulating tons of data
 							key["new"] = new_name.decode("UTF-8")
 							found = True
 						if key["new"] == selected:
-							log_info("HIT")
 							key["new"] = new_name.decode("UTF-8")
 							found = True
 					if not found:
 						self.binja_renames[hex(self.current_function.start)].append({"original":selected,"new":new_name.decode("UTF-8")})
 					self.rename_settings.set_string("ghinja_rename.ghinja_rename_struct",json.dumps(self.binja_renames),self.current_view,SettingsScope.SettingsResourceScope)
-					log_info(str(self.binja_renames))
-					log_info(json.dumps(self.binja_renames))
-					log_info(str(self.rename_settings.get_string_with_scope("ghinja_rename.ghinja_rename_struct",self.current_view)))
 					self.notifyOffsetChanged(self.current_offset)
 		return False
 	
@@ -178,10 +177,8 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 		try:
 			self.current_function = self.current_view.get_functions_containing(offset)[0]
 			try:
-				log_info("TRYING: " + str(self.binja_renames))
 				self.binja_renames[hex(self.current_function.start)]
 			except:
-				log_info("FAILING: " + str(self.binja_renames))
 				self.binja_renames[hex(self.current_function.start)] = []
 		except:
 			return "DECOMPILER OUTPUT FOR THIS FUNCTION WAS NOT FOUND"
@@ -208,15 +205,15 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 			#for ghinja_rename in self.binja_renames[hex(self.current_function.start)]:
 			js = json.loads(self.rename_settings.get_string("ghinja_rename.ghinja_rename_struct",self.current_view))
 			if js:
-				log_info(str(js))
 				for ghinja_rename in js[hex(self.current_function.start)]:
-					function_output = re.sub(ghinja_rename["original"],ghinja_rename["new"],function_output)
+					function_output = re.sub('\\b'+ghinja_rename["original"]+'\\b',ghinja_rename["new"],function_output)
 			
 			# Rename locals - quite buggy actually
 			for local in self.current_function.stack_layout:
 				if local.storage < 0:
 					look_for = f"local_{hex(local.storage)[3:]}"
 					function_output = re.sub(look_for,local.name,function_output)
+		self.function_output = function_output
 		return function_output
 		
 
