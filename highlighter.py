@@ -58,7 +58,7 @@ class Highlighter(QSyntaxHighlighter):
         # Highlight data
         data_format = QTextCharFormat()
         data_format.setForeground(QColor.fromRgb(142,230,237))
-        data_consts = "\\b_?DAT_[0-9a-zA-Z]+\\b"
+        data_consts = "\\b(PTR)?_?DAT_[0-9a-zA-Z]+\\b"
         for match in re.finditer(data_consts, text):
             self.setFormat(match.start(), match.end() - match.start(), data_format)
         # Highlight CPP Class paths
