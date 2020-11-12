@@ -17,7 +17,6 @@ instance_id = 0
 class GhinjaDockWidget(QWidget, DockContextHandler):
 	def __init__(self, parent, name, data):
 		# Read the configuration
-		# TODO handle cancel
 		settings = Settings()
 		settings.register_group("ghinja", "Ghinja")
 		settings.register_setting("ghinja.ghidra_install_path", """
@@ -48,7 +47,6 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 		self.current_offset = None
 		self.decomp = None
 		self.decomp_started = False
-		self.decomp_results = None
 		self.current_view = None
 		self.function_output = None
 		self.decompile_result_path = None
