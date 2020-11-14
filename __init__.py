@@ -51,6 +51,8 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 		self.function_output = None
 		self.decompile_result_path = None
 		self.decompile_offset_path = None
+		self.decompiler_done = False
+		self.function_args = []
 		QWidget.__init__(self, parent)
 		DockContextHandler.__init__(self, self, name)
 		self.actionHandler = UIActionHandler()
@@ -62,7 +64,7 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 		self.editor.setStyleSheet("QTextEdit { background-color: #2a2a2a; font-family: Consolas }")
 		self.editor.setPlainText(" Click anywhere in the dock to start decompiler")
 		self.editor.selectionChanged.connect(self.onSelect)
-		highlighter = Highlighter(self.editor.document(),"")
+		highlighter = Highlighter(self.editor.document(),"",self.function_args)
 		layout.addWidget(self.editor)
 		layout.setAlignment(QtCore.Qt.AlignLeft)
 		self.setLayout(layout)
@@ -72,15 +74,15 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 	def onSelect(self):
 		cursor = self.editor.textCursor()
 		if cursor.selectedText():
-			ch = Highlighter(self.editor.document(),"\\b" + cursor.selectedText() + "\\b")
+			ch = Highlighter(self.editor.document(),"\\b" + cursor.selectedText() + "\\b",self.function_args)
 		else:
-			ch = Highlighter(self.editor.document(),"")
-		#log_info("selected: " + str(cursor.selectedText()))
+			ch = Highlighter(self.editor.document(),"",self.function_args)
 
 	def notifyOffsetChanged(self, offset):
-		if self.decomp.finished:
+		if self.decompiler_done:
 			self.current_offset = offset
 			self.editor.setPlainText(self.find_function(offset))
+			ch = Highlighter(self.editor.document(),"",self.function_args)
 
 	def shouldBeVisible(self, view_frame):
 		if view_frame is None:
@@ -90,15 +92,18 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 
 	def eventFilter(self, obj, event):
 		if event.type() == QtCore.QEvent.FocusIn and self.editor.hasFocus() and not self.decomp_started:
+			self.decomp = Decompiler(self.filename,self.current_path)
 			self.editor.setPlainText(" Decompiler running ... ")
 			self.decomp.start()
 			self.decomp_started = True
+			self.decompiler_done = True
 		if event.type() == QtCore.QEvent.KeyPress and obj is self.editor:
 			cursor = self.editor.textCursor()
 			if event.key() == QtCore.Qt.Key_F and self.editor.hasFocus():
 				# Find TODO
 				search_string = get_text_line_input("Find: ","Find")
-				ch = Highlighter(self.editor.document(),search_string.decode("UTF-8"))
+				if search_string:
+					ch = Highlighter(self.editor.document(),search_string.decode("UTF-8"),self.function_args)
 			if event.key() == QtCore.Qt.Key_N and self.editor.hasFocus():
 				if self.current_view.file.has_database == False:
 					show_message_box("Project not saved", "To enable renaming, make sure that the current project is saved to a BNDB file.", buttons=0, icon=2)
@@ -106,10 +111,10 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 				# Handle rename action
 				selected = cursor.selectedText()
 				if selected != "":
-					self.binja_renames = json.loads(self.rename_settings.get_string("ghinja_rename.ghinja_rename_struct",self.current_view))
+					#self.binja_renames = json.loads(self.rename_settings.get_string("ghinja_rename.ghinja_rename_struct",self.current_view))
 					# Get selected text
 					new_name = get_text_line_input(f"Rename {selected}: ","Rename")
-					if not re.match(b"^\\w+$", new_name):
+					if new_name and not re.match(b"^\\w+$", new_name):
 						show_message_box("Name not valid", "Please use only 'word' characters (A-Z, a-z, 0-9 and _)", buttons=0, icon=2)
 						return False
 					if re.search(f"\\b{new_name.decode('UTF-8')}\\b",self.function_output):
@@ -135,8 +140,8 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 		if view_frame is None:
 			pass
 		else:
-			self.binja_renames = json.loads(self.rename_settings.get_string("ghinja_rename.ghinja_rename_struct",self.current_view))
 			self.current_view = view_frame.actionContext().binaryView
+			self.binja_renames = json.loads(self.rename_settings.get_string("ghinja_rename.ghinja_rename_struct",self.current_view))
 			md5 = hashlib.md5()
 			try:
 				with open(view_frame.actionContext().binaryView.file.original_filename,'rb') as binary:
@@ -162,10 +167,10 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 			#current_path = Path(Path.home() / f".ghinja_projects/{str(Path(view_frame.actionContext().binaryView.file.original_filename).name) + '_' + md5.hexdigest()}")
 			self.decompile_result_path = Path(self.current_path / "decomp_")
 			self.decompile_offset_path = Path(self.current_path / "decomp_offset")
-			self.decomp = Decompiler(self.filename,self.current_path)
+			
 			if os.path.exists(str(self.decompile_offset_path)):
 				# Already decompiled we dont have to do anything
-				self.decomp.finished = True
+				self.decompiler_done = True
 				self.decomp_started = True
 				
 
@@ -206,13 +211,22 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 			for callee in self.current_function.callees:
 				look_for = f'FUN_{callee.start:08x}'
 				function_output = function_output.replace(look_for,callee.name)
-
+			
 			#for ghinja_rename in self.binja_renames[hex(self.current_function.start)]:
 			js = json.loads(self.rename_settings.get_string("ghinja_rename.ghinja_rename_struct",self.current_view))
 			if js:
-				for ghinja_rename in js[hex(self.current_function.start)]:
-					function_output = re.sub('\\b'+ghinja_rename["original"]+'\\b',ghinja_rename["new"],function_output)
-			
+				try:
+					for ghinja_rename in js[hex(self.current_function.start)]:
+						function_output = re.sub('\\b'+ghinja_rename["original"]+'\\b',ghinja_rename["new"],function_output)
+				except:
+					pass
+
+			self.function_args = []
+			for arg in re.findall("\\w+ (\\w+),|\\w+ (\\w+)\\)", function_output):
+				if arg[0]:
+					self.function_args.append(arg[0])
+				elif arg[1]:
+					self.function_args.append(arg[1])
 			# Rename locals - quite buggy actually
 			for local in self.current_function.stack_layout:
 				if local.storage < 0:

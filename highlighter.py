@@ -5,9 +5,10 @@ from PySide2.QtGui import QSyntaxHighlighter, QTextCharFormat, QFont, QColor
 from binaryninja import *
 
 class Highlighter(QSyntaxHighlighter):
-    def __init__(self,doc,selected):
+    def __init__(self,doc,selected,args):
         super(Highlighter,self).__init__(doc)
         self.selected = selected
+        self.args = args
 
     def highlightBlock(self, text):
         # Highlight keywords
@@ -70,9 +71,10 @@ class Highlighter(QSyntaxHighlighter):
         # Params
         params_format = QTextCharFormat()
         params_format.setForeground(QColor.fromRgb(128,216,255))
-        params_pattern = "\\bparam_\\d+\\b"
-        for match in re.finditer(params_pattern, text):
-            self.setFormat(match.start(), match.end() - match.start(), params_format)
+        for arg in self.args:
+            params_pattern = "\\b" + arg + "\\b"
+            for match in re.finditer(params_pattern, text):
+                self.setFormat(match.start(), match.end() - match.start(), params_format)
         # Highlight selection
         if self.selected:
             selection_format = QTextCharFormat()
