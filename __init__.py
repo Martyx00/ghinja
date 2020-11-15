@@ -223,7 +223,7 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 					pass
 
 			self.function_args = []
-			for arg in re.findall("\\w+ (\\w+),|\\w+ (\\w+)\\)", function_output):
+			for arg in re.findall("\\w+ [*&]?(\\w+),|\\w+ [*&]?(\\w+)\\)", function_output):
 				if arg[0]:
 					self.function_args.append(arg[0])
 				elif arg[1]:
