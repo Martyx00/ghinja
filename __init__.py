@@ -46,7 +46,6 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 		self.current_function = None
 		self.current_offset = None
 		self.decomp = None
-		self.decomp_started = False
 		self.current_view = None
 		self.function_output = None
 		self.decompile_result_path = None
@@ -81,8 +80,12 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 	def notifyOffsetChanged(self, offset):
 		if self.decompiler_done:
 			self.current_offset = offset
-			self.editor.setPlainText(self.find_function(offset))
-			ch = Highlighter(self.editor.document(),"",self.function_args)
+			try:
+				self.editor.setPlainText(self.find_function(offset))
+				ch = Highlighter(self.editor.document(),"",self.function_args)
+			except:
+				pass
+			
 
 	def shouldBeVisible(self, view_frame):
 		if view_frame is None:
@@ -91,11 +94,10 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 			return True
 
 	def eventFilter(self, obj, event):
-		if event.type() == QtCore.QEvent.FocusIn and self.editor.hasFocus() and not self.decomp_started:
+		if event.type() == QtCore.QEvent.FocusIn and self.editor.hasFocus() and not self.decompiler_done:
 			self.decomp = Decompiler(self.filename,self.current_path)
 			self.editor.setPlainText(" Decompiler running ... ")
 			self.decomp.start()
-			self.decomp_started = True
 			self.decompiler_done = True
 		if event.type() == QtCore.QEvent.KeyPress and obj is self.editor:
 			cursor = self.editor.textCursor()
@@ -171,7 +173,6 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 			if os.path.exists(str(self.decompile_offset_path)):
 				# Already decompiled we dont have to do anything
 				self.decompiler_done = True
-				self.decomp_started = True
 				
 
 
