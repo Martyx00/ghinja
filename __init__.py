@@ -221,9 +221,9 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 						function_output = re.sub('\\b'+ghinja_rename["original"]+'\\b',ghinja_rename["new"],function_output)
 				except:
 					pass
-
+			# Searching in frist 300 chars is enough
 			self.function_args = []
-			for arg in re.findall("\\w+ [*&]?(\\w+),|\\w+ [*&]?(\\w+)\\)", function_output):
+			for arg in re.findall("\\w+ [*&]?(\\w+),|\\w+ [*&]?(\\w+)\\)", function_output[:300]):
 				if arg[0]:
 					self.function_args.append(arg[0])
 				elif arg[1]:
@@ -241,6 +241,6 @@ def addStaticDockWidget():
 	dock_handler = DockHandler.getActiveDockHandler()
 	parent = dock_handler.parent()
 	dock_widget = GhinjaDockWidget.create_widget("Ghinja Decompiler", parent)
-	dock_handler.addDockWidget(dock_widget, Qt.TopDockWidgetArea, Qt.Vertical, True, False)
+	dock_handler.addDockWidget(dock_widget, Qt.TopDockWidgetArea, Qt.Horizontal, True, False)
 
 addStaticDockWidget()
