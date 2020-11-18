@@ -1,4 +1,4 @@
-# Ghinja (1.2)
+# Ghinja (1.3)
 Author: **Martin Petran**
 
 _Plugin to embed Ghidra Decompiler into Binary Ninja_
@@ -8,7 +8,7 @@ This plugin allows you to enable a dock in the UI that will show a result of the
 
 ![Sample](https://github.com/Martyx00/ghinja/blob/master/img/demo.gif?raw=true "Sample")
 
-**Avaialable Hotkeys:**
+**Available Hotkeys:**
 * ***N*** - When Ghinja window has focus you can use this hotkey to rename the variable that does not have equivalent in the Binary Ninja view. This function allows you to rename anything, however all labels (functions, variables, etc.) that are are avialable in Binary Ninja view should be renamed there rather than in Ghinja as that is string replace only.
 * ***F*** - When Ghinja window has focus you can use this hotkey to perform a simple text seatch in the decompiler result.
 
