@@ -28,6 +28,7 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 				}
 				""")
 		if not os.path.exists(settings.get_string("ghinja.ghidra_install_path")):
+			show_message_box("Path to Ghidra headless was not found!", "To allow the Ghinja plugin to work, you will be prompted to specify the path to the \"analyzeHeadless(.bat)\" file.", buttons=0, icon=2)
 			settings.set_string("ghinja.ghidra_install_path",get_open_filename_input("Provide Path to Ghidra \"analyzeHeadless(.bat)\" file (Usually: <GHIDRA_INSTALL>/support/analyzeHeadless)").decode("utf-8"))
 		
 		self.rename_settings = Settings()
