@@ -61,7 +61,7 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 		self.editor = QTextEdit(self)
 		self.editor.setReadOnly(True)
 		self.editor.installEventFilter(self)
-		self.editor.setStyleSheet("QTextEdit { background-color: #2a2a2a; font-family: Consolas }")
+		self.editor.setStyleSheet("QTextEdit { font-family: Consolas }")
 		self.editor.setPlainText(" Click anywhere in the dock to start decompiler")
 		self.editor.selectionChanged.connect(self.onSelect)
 		highlighter = Highlighter(self.editor.document(),"",self.function_args)
