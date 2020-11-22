@@ -78,7 +78,9 @@ class Highlighter(QSyntaxHighlighter):
         # Highlight selection
         if self.selected:
             selection_format = QTextCharFormat()
-            selection_format.setBackground(getThemeColor(enums.ThemeColor.TokenHighlightColor))
+            #selection_format.setBackground(getThemeColor(enums.ThemeColor.Highlight))
+            selection_format.setBackground(QColor.fromRgb(121,195,231))
+            selection_format.setForeground(QColor.fromRgb(42,42,42))
             try:
                 selection_pattern = self.selected
                 for match in re.finditer(selection_pattern, text):
