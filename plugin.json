@@ -18,7 +18,7 @@
 	"dependencies": {
 		"other": ["This plugin requires a working install of Ghidra (https://ghidra-sre.org/)."]
 	},
-	"version": "1.3",
+	"version": "1.4",
 	"author": "Martin Petran",
 	"minimumbinaryninjaversion": 2263
 }
