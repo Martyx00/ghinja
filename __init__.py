@@ -80,13 +80,15 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 
 	def notifyOffsetChanged(self, offset):
 		if self.decompiler_done:
-			if not self.current_function or not (self.current_function.lowest_address < offset and self.current_function.highest_address > offset):
-				self.current_offset = offset
-				try:
-					self.editor.setPlainText(self.find_function(offset))
-					ch = Highlighter(self.editor.document(),"",self.function_args)
-				except:
-					pass
+			#if not self.current_function or not (self.current_function.lowest_address < offset and self.current_function.highest_address > offset):
+			scrollbar_value = self.editor.verticalScrollBar().value()
+			self.current_offset = offset
+			try:
+				self.editor.setPlainText(self.find_function(offset))
+				ch = Highlighter(self.editor.document(),"",self.function_args)
+				self.editor.verticalScrollBar().setValue(scrollbar_value)
+			except:
+				pass
 
 	def shouldBeVisible(self, view_frame):
 		if view_frame is None:
@@ -211,7 +213,10 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 			function_output = re.sub("\\b\\w*\\(", self.current_function.name + "(", function_output, 1)
 			# Rename functions
 			for callee in self.current_function.callees:
-				look_for = f'FUN_{callee.start:08x}'
+				if offset_diff == 0:
+					look_for = f'FUN_{callee.start:08x}'
+				else:
+					look_for = f'FUN_{callee.start + offset_diff:08x}'
 				function_output = function_output.replace(look_for,callee.name)
 			
 			#for ghinja_rename in self.binja_renames[hex(self.current_function.start)]:
