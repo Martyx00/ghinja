@@ -80,13 +80,13 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 
 	def notifyOffsetChanged(self, offset):
 		if self.decompiler_done:
-			self.current_offset = offset
-			try:
-				self.editor.setPlainText(self.find_function(offset))
-				ch = Highlighter(self.editor.document(),"",self.function_args)
-			except:
-				pass
-			
+			if not self.current_function or not (self.current_function.lowest_address < offset and self.current_function.highest_address > offset):
+				self.current_offset = offset
+				try:
+					self.editor.setPlainText(self.find_function(offset))
+					ch = Highlighter(self.editor.document(),"",self.function_args)
+				except:
+					pass
 
 	def shouldBeVisible(self, view_frame):
 		if view_frame is None:
