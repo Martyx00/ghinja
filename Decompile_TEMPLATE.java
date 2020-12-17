@@ -18,8 +18,8 @@
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import ghidra.app.plugin.core.script.Ingredient;
-import ghidra.app.plugin.core.script.IngredientDescription;
+//import ghidra.app.plugin.core.script.Ingredient;
+//import ghidra.app.plugin.core.script.IngredientDescription;
 import ghidra.app.script.GatherParamPanel;
 import ghidra.app.script.GhidraScript;
 import ghidra.app.util.Option;
