@@ -186,6 +186,9 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 	def create_widget(name, parent, data = None):
 		return GhinjaDockWidget(parent, name, data)
 
+	def myroundup(self,n, step):
+		return ((n - 1) // step + 1) * step
+
 	def find_function(self, offset):
 		function_output = "DECOMPILER OUTPUT FOR THIS FUNCTION WAS NOT FOUND"
 		try:
@@ -201,6 +204,9 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 		with open(str(self.decompile_offset_path),"r") as offset_file:
 			ghidra_offset = int(offset_file.read())
 			offset_diff = ghidra_offset - self.current_view.functions[0].start
+			if offset_diff > 0x1000:
+				offset_diff = self.myroundup(offset_diff,0x100)
+			#log_info(f"GHIDRA OFFSET: {hex(ghidra_offset)} DIFF: {hex(offset_diff)} ROUND: {hex(self.myroundup(offset_diff,0x100))}")
 			if offset_diff == 0:
 				offset = self.current_function.start
 			else:
