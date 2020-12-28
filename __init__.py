@@ -204,7 +204,7 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 		with open(str(self.decompile_offset_path),"r") as offset_file:
 			ghidra_offset = int(offset_file.read())
 			offset_diff = ghidra_offset - self.current_view.functions[0].start
-			if offset_diff > 0x1000:
+			if offset_diff > 0x100 and not os.path.exists(str(self.decompile_result_path) + str(offset_diff)):
 				offset_diff = self.myroundup(offset_diff,0x100)
 			#log_info(f"GHIDRA OFFSET: {hex(ghidra_offset)} DIFF: {hex(offset_diff)} ROUND: {hex(self.myroundup(offset_diff,0x100))}")
 			if offset_diff == 0:
