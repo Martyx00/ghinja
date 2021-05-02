@@ -36,7 +36,7 @@ import ghidra.program.model.listing.Listing;
 import java.util.ArrayList;
 import java.io.FileWriter;
 
-public class Decompile extends HeadlessScript {
+public class Gnidja extends HeadlessScript {
 
 	@Override
 	public void run() throws Exception {
