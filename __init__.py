@@ -7,7 +7,7 @@ from PySide2.QtCore import Qt
 from PySide2.QtGui import QTextCursor
 from PySide2.QtWidgets import QApplication, QHBoxLayout, QVBoxLayout, QLabel, QWidget, QTextEdit
 import json
-import os
+import os, sys
 import hashlib
 from pathlib import Path
 import shutil
@@ -70,6 +70,7 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 		self.setLayout(layout)
 		instance_id += 1
 		self.data = data
+		self.filename = None
 
 	def onSelect(self):
 		cursor = self.editor.textCursor()
@@ -97,7 +98,7 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 			return True
 
 	def eventFilter(self, obj, event):
-		if event.type() == QtCore.QEvent.FocusIn and self.editor.hasFocus() and not self.decompiler_done:
+		if event.type() == QtCore.QEvent.FocusIn and self.editor.hasFocus() and not self.decompiler_done and self.filename:
 			self.decomp = Decompiler(self.filename,self.current_path)
 			self.editor.setPlainText(" Decompiler running ... ")
 			self.decomp.start()
@@ -203,7 +204,12 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 		offset = 0
 		with open(str(self.decompile_offset_path),"r") as offset_file:
 			ghidra_offset = int(offset_file.read())
-			offset_diff = ghidra_offset - self.current_view.functions[0].start
+			# find min start as in some cases the functions might not be ordered
+			binja_offset = sys.maxsize
+			for f in self.current_view.functions:
+				if f.start < binja_offset:
+					binja_offset = f.start
+			offset_diff = ghidra_offset - binja_offset
 			if offset_diff > 0x100 and not os.path.exists(str(self.decompile_result_path) + str(offset_diff)):
 				offset_diff = self.myroundup(offset_diff,0x100)
 			#log_info(f"GHIDRA OFFSET: {hex(ghidra_offset)} DIFF: {hex(offset_diff)} ROUND: {hex(self.myroundup(offset_diff,0x100))}")
@@ -211,7 +217,6 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 				offset = self.current_function.start
 			else:
 				offset = self.current_function.start + offset_diff
-
 		if os.path.exists(str(self.decompile_result_path) + str(offset)):
 			with open(str(self.decompile_result_path) + str(offset),"r") as function_file:
 				function_output = function_file.read()
