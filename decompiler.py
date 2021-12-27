@@ -16,7 +16,7 @@ class Decompiler(BackgroundTaskThread):
 
     def run(self):
         self.progress = f"[Ghinja] Running the decompiler job ... Ghinja decompiler output not available until finished."
-        with open(os.path.dirname(os.path.realpath(__file__)) + "/Decompile_TEMPLATE.java",'r') as decomp_file:
+        with open(os.path.dirname(os.path.realpath(__file__)) + "/Decompile_TEMPLATE.txt",'r') as decomp_file:
             data = decomp_file.read()
             with open(os.path.dirname(os.path.realpath(__file__)) + "/Decompile.java",'w') as tmp_decomp_file:
                 tmp_decomp_file.write(data.replace("PLACEHOLDER_OUTPUT",str(self.decompile_result_path).replace("\\","\\\\")))

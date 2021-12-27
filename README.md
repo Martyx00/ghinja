@@ -1,4 +1,4 @@
-# Ghinja (1.7)
+# Ghinja (1.8)
 Author: **Martin Petran**
 
 _Plugin to embed Ghidra Decompiler into Binary Ninja_
