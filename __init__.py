@@ -100,9 +100,10 @@ class GhinjaDockWidget(QWidget, DockContextHandler):
 	def eventFilter(self, obj, event):
 		if event.type() == QtCore.QEvent.FocusIn and self.editor.hasFocus() and not self.decompiler_done and self.filename:
 			self.decomp = Decompiler(self.filename,self.current_path)
-			self.editor.setPlainText(" Decompiler running ... ")
+			self.editor.setPlainText(" ... ")
 			self.decomp.start()
 			self.decompiler_done = True
+			
 		if event.type() == QtCore.QEvent.KeyPress and obj is self.editor:
 			cursor = self.editor.textCursor()
 			if event.key() == QtCore.Qt.Key_F and self.editor.hasFocus():
