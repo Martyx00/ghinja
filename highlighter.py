@@ -1,7 +1,7 @@
-from PySide2 import QtCore
+from PySide6 import QtCore
 import re
-from PySide2.QtCore import Qt
-from PySide2.QtGui import QSyntaxHighlighter, QTextCharFormat, QFont, QColor
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QSyntaxHighlighter, QTextCharFormat, QFont, QColor
 from binaryninja import *
 from binaryninjaui import getThemeColor
 

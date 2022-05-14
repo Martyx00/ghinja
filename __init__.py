@@ -1,11 +1,11 @@
 from binaryninja import *
 from binaryninjaui import DockHandler, DockContextHandler, UIActionHandler
-from PySide2 import QtCore
+from PySide6 import QtCore
 from .highlighter import Highlighter
 from .decompiler import Decompiler
-from PySide2.QtCore import Qt
-from PySide2.QtGui import QTextCursor
-from PySide2.QtWidgets import QApplication, QHBoxLayout, QVBoxLayout, QLabel, QWidget, QTextEdit
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QTextCursor
+from PySide6.QtWidgets import QApplication, QHBoxLayout, QVBoxLayout, QLabel, QWidget, QTextEdit
 import json
 import os, sys
 import hashlib
